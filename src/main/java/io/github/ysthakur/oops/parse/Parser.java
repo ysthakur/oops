@@ -3,9 +3,10 @@ package io.github.ysthakur.oops.parse;
 import io.github.ysthakur.oops.Lists;
 import io.github.ysthakur.oops.Strings;
 import io.github.ysthakur.oops.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.Function;
 
 public class Parser {
   private final SourceFile source;
@@ -18,24 +19,37 @@ public class Parser {
 
   private Parser(SourceFile source) {
     this.source = source;
-    this.code = source.text;
+    this.code = source.getText();
   }
 
-  public static Result parse(SourceFile file) {
-    return new Parser(file).parse();
+  public static Value parse(SourceFile file) {
+    return new Parser(file).parseFull();
   }
 
   private char curr() {
     return this.code.charAt(this.offset);
   }
 
-  private Result parse() {
+  private Value parseFull() {
+    var res = parse();
+    if (this.offset != code.length()) {
+      throw new ParseError("Extra stuff", new Span(this.offset, code.length(),
+          this.source));
+    } else {
+      return res;
+    }
+  }
+
+  private Value parse() {
     trimWhitespace();
     if (this.offset == code.length()) {
-      return unexpectedEof();
+      unexpectedEof();
     }
 
-    if (curr() == '{') {
+    if (curr() == '}') {
+      throw new ParseError("Unexpected closing brace", new Span(this.offset,
+          this.offset + 1, this.source));
+    } else if (curr() == '{') {
       this.offset++;
       return parseSexpr();
     } else {
@@ -43,36 +57,60 @@ public class Parser {
     }
   }
 
-  private Result parseSexpr() {
+  private Value parseSexpr() {
     trimWhitespace();
     if (this.offset == code.length()) {
-      return unexpectedEof();
+      unexpectedEof();
     }
 
     if (curr() == '}') {
-      return new Result.Ok(Lists.NIL);
+      this.offset++;
+      return Lists.NIL;
     }
 
-    return parse().flatMap((atom) -> parseSexpr().flatMap(rest -> new Result.Ok(Lists.cons(atom, rest))));
+    var atom = parse();
+    var rest = parseSexpr();
+    return Lists.cons(atom, rest);
   }
 
-  private @NotNull Result parseAtom() {
+  private @NotNull Value parseAtom() {
     trimWhitespace();
     if (this.offset == code.length()) {
-      return unexpectedEof();
+      unexpectedEof();
     }
 
     if (curr() == '{' || curr() == '}') {
-      // This isn't a Result.Err because it should never happen
+      // This isn't a ParseError because it should never happen
       throw new AssertionError("Expected atom, got curly brace (" + curr() + ")");
     }
 
     var start = this.offset;
+    if (curr() == '"') {
+      this.offset++;
+      return parseString();
+    }
     while (this.offset < code.length() && !Character.isWhitespace(curr()) && curr() != '{' && curr() != '}') {
       this.offset++;
     }
 
-    return new Result.Ok(Strings.fromJavaStr(code.substring(start, this.offset)));
+    return Strings.from(code.substring(start, this.offset))
+        .withSpan(new Span(start, this.offset, source));
+  }
+
+  private @NotNull Value parseString() {
+    var start = this.offset;
+    var res = new StringBuilder();
+    while (this.offset < code.length() && curr() != '"') {
+      res.append(curr());
+      this.offset++;
+    }
+    if (this.offset == code.length()) {
+      unexpectedEof();
+    }
+    var span = new Span(start, this.offset, source);
+    this.offset++;
+    // Wrap the string in a quote
+    return Lists.from(Strings.from("'"), Strings.from(res.toString()).withSpan(span)).withSpan(span);
   }
 
   private void trimWhitespace() {
@@ -81,37 +119,16 @@ public class Parser {
     }
   }
 
-  private Result unexpectedEof() {
-    return new Result.Err("Unexpected EOF", new Span(this.offset, this.offset, this.source));
+  private void unexpectedEof() {
+    throw new ParseError("Unexpected EOF", new Span(this.offset, this.offset,
+        this.source));
   }
 
-  public sealed interface Result permits Result.Ok, Result.Err {
-    boolean isOk();
-
-    Result flatMap(Function<Value, Result> f);
-
-    record Ok(Value parsed) implements Result {
-      @Override
-      public boolean isOk() {
-        return true;
-      }
-
-      @Override
-      public Result flatMap(Function<Value, Result> f) {
-        return f.apply(this.parsed);
-      }
-    }
-
-    record Err(String msg, Span location) implements Result {
-      @Override
-      public boolean isOk() {
-        return false;
-      }
-
-      @Override
-      public Result flatMap(Function<Value, Result> f) {
-        return this;
-      }
-    }
+  @AllArgsConstructor
+  @Getter
+  @Accessors(fluent = true)
+  public static class ParseError extends RuntimeException {
+    private final String msg;
+    private final Span location;
   }
 }

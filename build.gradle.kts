@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("io.freefair.lombok") version "8.6"
 }
 
 group = "io.github.ysthakur"
@@ -18,4 +19,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.processResources {
+    from("$rootDir/stdlib").into("$resources/stdlib")
 }

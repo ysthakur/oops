@@ -2,6 +2,7 @@ package io.github.ysthakur.oops.parse;
 
 import io.github.ysthakur.oops.Nats;
 import io.github.ysthakur.oops.Value;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
@@ -9,26 +10,41 @@ import java.util.Objects;
 /**
  * A reference to a span of text that a piece of code came from. Used for error messages.
  */
+@lombok.Value
 public class Span {
-  public final int start;
-  public final int end;
-  public final SourceFile src;
-  public final Value asValue;
+  public static final Span GARBAGE = new Span();
+
+  int start;
+  int end;
+  SourceFile src;
+  Value value;
 
   /**
    * @param start Start offset (0-indexed, inclusive)
    * @param end   End offset (0-indexed, exclusive)
    * @param src   Which file the code came from
    */
-  public Span(int start, int end, SourceFile src) {
+  public Span(int start, int end, @NotNull SourceFile src) {
     this.start = start;
     this.end = end;
     this.src = src;
-    this.asValue = new Value(Map.of("start", Nats.fromInt(start), "end", Nats.fromInt(end), "src", src.asValue));
+    this.value = new Value(Map.of("start", Nats.fromInt(start), "end",
+        Nats.fromInt(end), "src", src.getValue()));
+  }
+
+  /**
+   * To be used only for garbage
+   */
+  private Span() {
+    this.start = -1;
+    this.end = -1;
+    this.src = null;
+    this.value = null;
   }
 
   public String toString() {
-    return src.name + ":" + start + ":" + end;
+    if (this == Span.GARBAGE) return "GARBAGE";
+    return src.getName() + ":" + start + ":" + end;
   }
 
   @Override
