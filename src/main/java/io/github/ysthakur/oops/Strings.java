@@ -16,8 +16,7 @@ public class Strings {
     return res;
   }
 
-  @NotNull
-  public static String toJavaStr(@NonNull Value str) {
+  @NotNull public static String toJavaStr(@NonNull Value str) {
     var chars = Lists.toJavaList(str);
     var res = new StringBuilder();
     for (var c : chars) {

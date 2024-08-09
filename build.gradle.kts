@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("io.freefair.lombok") version "8.6"
+    id("com.diffplug.spotless") version "6.25.0"
 }
 
 group = "io.github.ysthakur"
@@ -23,4 +24,11 @@ tasks.test {
 
 tasks.processResources {
     from("$rootDir/stdlib").into("$resources/stdlib")
+}
+
+spotless {
+    java {
+        // fix formatting of type annotations
+        formatAnnotations()
+    }
 }

@@ -46,11 +46,9 @@ public sealed interface Type {
       return Type.Named.Empty;
     }
 
-    var car = value.get("car");
-    var cdr = value.get("cdr");
-    if (car != null && cdr != null) {
-      var carType = guessType(car);
-      var cdrType = guessType(cdr);
+    if (Lists.isCons(value)) {
+      var carType = guessType(Lists.car(value));
+      var cdrType = guessType(Lists.cdr(value));
       if (cdrType.isList()) {
         return or(new Lst(carType), cdrType);
       } else {

@@ -14,13 +14,10 @@ import java.util.Map;
 @lombok.Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SourceFile {
-  @NonNull
-  @EqualsAndHashCode.Include
+  @NonNull @EqualsAndHashCode.Include
   String name;
-  @NonNull
-  String text;
-  @NonNull
-  Value value;
+  @NonNull String text;
+  @NonNull Value value;
 
   public SourceFile(@NotNull String name, @NotNull String text) {
     this.name = name;

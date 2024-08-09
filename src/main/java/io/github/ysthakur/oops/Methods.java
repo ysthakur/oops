@@ -1,23 +1,31 @@
 package io.github.ysthakur.oops;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Methods {
   private static final String PARAMS_FIELD = "params";
   private static final String BODY_FIELD = "body";
 
-  public static Value from(List<Value> params, Value body) {
-    return new Value(Map.of(PARAMS_FIELD, Lists.from(params), BODY_FIELD, body));
+  @Contract("_, _ -> new")
+  public static @NotNull Value from(List<Value> params, @Nullable Value body) {
+    var fields = new HashMap<String, Value>();
+    fields.put(PARAMS_FIELD, Lists.from(params));
+    if (body != null) {
+      fields.put(BODY_FIELD, body);
+    }
+    return new Value(fields);
   }
 
   public static List<String> params(@NotNull Value method) {
     return Lists.toJavaList(method.get(PARAMS_FIELD)).stream().map(Strings::toJavaStr).toList();
   }
 
-  public static Value body(Value method) {
-    return method.get(BODY_FIELD);
+  @NotNull public static Value body(@NotNull Value method) {
+    return method.fields().getOrDefault(BODY_FIELD, Lists.from(Strings.from("'"), Lists.NIL));
   }
 }

@@ -23,7 +23,6 @@ public final class Value {
     this.span = span;
   }
 
-  @Nullable
   public Value get(String fieldName) {
     return this.fields.get(fieldName);
   }

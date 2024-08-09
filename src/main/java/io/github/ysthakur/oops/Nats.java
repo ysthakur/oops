@@ -18,11 +18,13 @@ public class Nats {
     if (i < 0) {
       throw new IllegalArgumentException("Only non-negative integers can be " +
           "represented, got " + i);
-    } else if (i == 0) {
-      return ZERO;
-    } else {
-      return succ(fromInt(i - 1));
     }
+    var res = ZERO;
+    while (i > 0) {
+      res = succ(res);
+      i --;
+    }
+    return res;
   }
 
   public static int toInt(@NotNull Value nat) {
